@@ -7,6 +7,8 @@ from menpofit.aam import LucasKanadeAAMFitter, WibergInverseCompositional
 from menpofit.fitter import noisy_shape_from_bounding_box
 from menpodetect import load_dlib_frontal_face_detector
 import os
+from menpofit.io import PickleWrappedFitter, image_greyscale_crop_preprocess
+from functools import partial
 def file_name_except_format(file_dir):
     L=[]
     for root, dirs, files in os.walk(file_dir):
@@ -34,12 +36,29 @@ for img in print_progress(mio.import_images(path_to_images, verbose=True)):
 aam = HolisticAAM(training_images, reference_shape=None,
                   diagonal=150, scales=(0.5, 1.0),
                   holistic_features=igo, verbose=True)
+#模型固化
+# LucasKanadeAAMFitter only takes one argument, a trained aam.
+fitter_args = (aam, )
 
-fitter = LucasKanadeAAMFitter(aam,
-                              lk_algorithm_cls=WibergInverseCompositional,
-                              n_shape=[3, 20], n_appearance=[30, 150])
+# kwargs for fitter construction. Note that here sampling is a
+# list of numpy arrays we have already constructed (one per level)
+fitter_kwargs = dict(lk_algorithm_cls=WibergInverseCompositional)
+
+# kwargs for fitter.fit_from_{bb, shape}
+# (note here we reuse the same kwargs twice)
+fit_kwargs = dict(max_iters=[25, 5])
+
+# Partial over the PickleWrappedFitter to prepare an object that can be
+# invoked at load time
+fitter_wrapper = partial(PickleWrappedFitter, LucasKanadeAAMFitter,
+                         fitter_args, fitter_kwargs,
+                         fit_kwargs, fit_kwargs,
+                         image_preprocess=image_greyscale_crop_preprocess)
+
+# save the pickle down.这里输入模型保存文件名
+mio.export_pickle(fitter_wrapper, 'pretrained2_aam.pkl')
+
 # % matplotlib inline
-
 
 # method to load a database
 def load_database(path_to_images, crop_percentage, max_images=None):
@@ -62,6 +81,11 @@ def load_database(path_to_images, crop_percentage, max_images=None):
 image_path_test = "D:/电信研究院/人脸矫正/labelme-master/examples/transfer/test"
 test_images = load_database(image_path_test, 0.5, max_images=5)
 fitting_results = []
+#可以加载保存的模型也可以直接用fitter,反正是测试阶段
+# fitter = mio.import_pickle('pretrained2_aam.pkl')()
+fitter = LucasKanadeAAMFitter(aam,
+                              lk_algorithm_cls=WibergInverseCompositional,
+                              n_shape=[3, 20], n_appearance=[30, 150])
 for i in test_images:
     # obtain original landmarks
     gt_s = i.landmarks['PTS'].lms
@@ -70,11 +94,13 @@ for i in test_images:
     # fit image
     fr = fitter.fit_from_shape(i, s, gt_shape=gt_s)
     fitting_results.append(fr)
-    print('fr',type(fr),fr.final_shape.points,fr)
+    print('fr',fr)
+    # print(type(fr),fr.final_shape.points)
 # from menpowidgets import visualize_fitting_result
 # #预测
 # image_path_pred = "D:/电信研究院/人脸矫正/labelme-master/examples/transfer/pred"
-#
+# #加载保存的模型
+# fitter = mio.import_pickle('pretrained2_aam.pkl')()
 # pred_images = []
 # # load landmarked images
 # for i in mio.import_images(image_path_pred, max_images=None, verbose=True):
