@@ -9,6 +9,7 @@ from menpodetect import load_dlib_frontal_face_detector
 import os
 from menpofit.io import PickleWrappedFitter, image_greyscale_crop_preprocess
 from functools import partial
+from menpo.shape import PointDirectedGraph
 #预测
 def file_name_except_format(file_dir):
     L=[]
@@ -19,7 +20,7 @@ def file_name_except_format(file_dir):
     return L
 image_path_pred = "D:/电信研究院/人脸矫正/labelme-master/examples/transfer/pred"
 #加载保存的模型
-fitter = mio.import_pickle('pretrained2_aam.pkl')()
+fitter = mio.import_pickle('pretrained12131_aam.pkl')()
 pred_images = []
 # load landmarked images
 for i in mio.import_images(image_path_pred, max_images=None, verbose=True):
@@ -38,9 +39,20 @@ for i in pred_images:
     bboxes = detect(i)
     print("{} detected faces.".format(len(bboxes)))
     # initial bbox
-    initial_bbox = bboxes[0]
+    # initial_bbox = bboxes[0]
+    import numpy as np
+    imHei=i.height
+    imWid=i.width
+    adjacency_matrix = np.array([[0, 1, 0, 0],
+                                 [0, 0, 1, 0],
+                                 [0, 0, 0, 1],
+                                 [1, 0, 0, 0]])
+    points = np.array([[0, 0], [imWid, 0], [imWid, imHei], [0, imHei]])
+    graph = PointDirectedGraph(points, adjacency_matrix)
     # fit image
-    result = fitter.fit_from_bb(i, initial_bbox, max_iters=[15, 5],
+    # result = fitter.fit_from_bb(i, initial_bbox, max_iters=[15, 5],
+    #                             gt_shape=None)
+    result = fitter.fit_from_bb(i, graph, max_iters=[20, 10],
                                 gt_shape=None)
     # print result
     print('result',result)

@@ -56,7 +56,7 @@ fitter_wrapper = partial(PickleWrappedFitter, LucasKanadeAAMFitter,
                          image_preprocess=image_greyscale_crop_preprocess)
 
 # save the pickle down.这里输入模型保存文件名
-mio.export_pickle(fitter_wrapper, 'pretrained2_aam.pkl')
+mio.export_pickle(fitter_wrapper, 'pretrained12131_aam.pkl')
 
 # % matplotlib inline
 
@@ -100,7 +100,7 @@ for i in test_images:
 # #预测
 # image_path_pred = "D:/电信研究院/人脸矫正/labelme-master/examples/transfer/pred"
 # #加载保存的模型
-# fitter = mio.import_pickle('pretrained2_aam.pkl')()
+# fitter = mio.import_pickle('pretrained12131_aam.pkl')()
 # pred_images = []
 # # load landmarked images
 # for i in mio.import_images(image_path_pred, max_images=None, verbose=True):
@@ -127,7 +127,7 @@ for i in test_images:
 #     initial_bbox = bboxes[0]
 #
 #     # fit image
-#     result = fitter.fit_from_bb(i, initial_bbox, max_iters=[15, 5],
+#     result = fitter.fit_from_bb(i, initial_bbox, max_iters=[20, 10],
 #                                 gt_shape=None)
 #
 #     # print result
